@@ -1,17 +1,25 @@
 mod utils;
 
-use crate::utils::logger::{fatal, warning};
+use crate::utils::logger::{fatal, info, warning};
 use std::env;
+use std::process::{Command, Stdio};
+use std::time::SystemTime;
 
 pub struct Config {
     runs: u32,
-    command: String
+    command: String,
+    output: bool
+}
+
+pub struct Results {
+    times: Vec<u128>
 }
 
 fn main() {
     let mut config: Config = Config {
         runs: 5,
-        command: String::new()
+        command: String::new(),
+        output: false
     };
 
     let args: Vec<String> = env::args().collect();
@@ -21,6 +29,7 @@ fn main() {
     }
 
     let runs_flag: String = String::from("-runs");
+    let output_flag: String = String::from("-output");
 
     // get command from args
     let command_res = args.get(1);
@@ -56,5 +65,51 @@ fn main() {
         };
 
         config.runs = parse_result as u32;
+    }
+
+    if args.contains(&output_flag) {
+        config.output = true;
+    }
+
+    let mut results = Results {
+        times: Vec::new()
+    };
+
+    for i in 0..config.runs {
+        info!("Run {}...", i+1);
+        println!("{}", config.command.split(" ").collect::<Vec<_>>()[0]);
+        let now = SystemTime::now();
+        let raw_output = Command::new(&config.command.split(" ").collect::<Vec<_>>()[0])
+            .args(&config.command.split(" ").collect::<Vec<_>>()[1..])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .expect("Failed to run command.");
+
+        let time_taken = match now.elapsed() {
+            Ok(elapsed) => elapsed.as_millis(),
+            Err(_) => {
+                warning!("Timing failed.");
+                0
+            }
+        };
+
+        if config.output {
+            let output_format_result = String::from_utf8(raw_output.stdout);
+
+            let output_str = match output_format_result {
+                Ok(res) => res,
+                Err(_) => {
+                    fatal!("Could not parse the solution output.");
+                    return;
+                }
+            };
+
+            println!("---------- Run {} Output ----------", i);
+            println!("{}", output_str);
+            println!("---------------{}------------------", "-".repeat((i.ilog10() + 1) as usize));
+        }
+
+        results.times.push(time_taken);
     }
 }
