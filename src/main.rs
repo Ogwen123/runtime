@@ -13,8 +13,15 @@ pub struct Config {
     output: bool
 }
 
+struct SingleResult {
+    value: u128,
+    index: u32
+}
+
 pub struct Results {
-    times: Vec<u128>
+    times: Vec<u128>,
+    highest: SingleResult,
+    lowest: SingleResult
 }
 
 fn _print_config(config: &Config) {
@@ -36,7 +43,16 @@ fn take_input(message: &str) -> String {
         input.pop();
     }
 
-    return input
+    input
+}
+
+fn vec_average(values: Vec<u128>) -> u128 {
+    let mut sum: u128 = 0;
+    for i in values.clone() {
+        sum = sum + i;
+    }
+
+    return sum / values.len() as u128;
 }
 
 fn main() {
@@ -122,10 +138,18 @@ fn main() {
     _print_config(&config);
     // perform tests
     let mut results = Results {
-        times: Vec::new()
+        times: Vec::new(),
+        highest: SingleResult {
+            value: 0,
+            index: 0
+        },
+        lowest: SingleResult {
+            value: f64::INFINITY as u128,
+            index: 0
+        }
     };
 
-    for i in 0..config.runs {
+    for i in 0..config.runs { // do the command runs and time them
         info!("Run {}...", i+1);
         let now = SystemTime::now();
 
@@ -155,7 +179,7 @@ fn main() {
                 0
             }
         };
-
+        println!("{}", time_taken);
         if config.output {
             let output_format_result = String::from_utf8(output.stdout);
 
@@ -173,5 +197,26 @@ fn main() {
         }
 
         results.times.push(time_taken);
+        if time_taken < results.lowest.value {
+            results.lowest = SingleResult {
+                value: time_taken,
+                index: i
+            }
+        }
+        if time_taken > results.highest.value {
+            results.highest = SingleResult {
+                value: time_taken,
+                index: i
+            }
+        }
     }
+
+    // print the results of the test
+    println!("--------------- Results ---------------");
+    info!("Total time: {}ms", results.times.iter().sum::<u128>());
+    info!("Average time: {}ms", vec_average(results.times));
+    info!("Highest time was {}ms on run {}", results.highest.value, results.highest.index + 1);
+    info!("Lowest time was {}ms on run {}", results.lowest.value, results.lowest.index + 1);
+    println!("---------------------------------------");
+
 }
