@@ -46,13 +46,13 @@ fn take_input(message: &str) -> String {
     input
 }
 
-fn vec_average(values: Vec<u128>) -> u128 {
+fn vec_average(values: Vec<u128>) -> f64 {
     let mut sum: u128 = 0;
     for i in values.clone() {
         sum = sum + i;
     }
 
-    return sum / values.len() as u128;
+    sum as f64 / values.len() as f64
 }
 
 fn main() {
@@ -65,13 +65,13 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let runs_flag: String = String::from("-runs");
-    let output_flag: String = String::from("-output");
+    let runs_flag: String = String::from("--runs");
+    let output_flag: String = String::from("--output");
 
 
     // check command flags
     if args.contains(&runs_flag) {
-        let pos: usize = args.iter().position(|x| x == "-runs").unwrap();
+        let pos: usize = args.iter().position(|x| x == &runs_flag).unwrap();
 
         let item_result: Option<&String> = args.get(pos + 1);
 
@@ -179,7 +179,6 @@ fn main() {
                 0
             }
         };
-        println!("{}", time_taken);
         if config.output {
             let output_format_result = String::from_utf8(output.stdout);
 
